@@ -11,12 +11,18 @@ func main() {
 	fmt.Println("Listening on port :3000")
 
 	// Create a new server
-	l, err := net.Listen("tcp", "127.0.0.1:3000")
+	l, err := net.Listen("tcp", ":3000")
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	fmt.Println("Server running on : ", l.Addr())
+
+	aof, err := NewAof("redis.aof")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	defer aof.Close()
 
 	// Listen for connections
 	conn, err := l.Accept()
@@ -55,6 +61,10 @@ func main() {
 			fmt.Println("Invalid command: ", command)
 			writer.Write(Value{typ: "string", str: ""})
 			continue
+		}
+
+		if command == "SET" || command == "HSET" {
+			aof.Write(value)
 		}
 
 		result := handler(args)

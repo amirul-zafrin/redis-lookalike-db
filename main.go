@@ -23,15 +23,26 @@ func main() {
 	}
 	defer aof.Close()
 
-	defer l.Close()
+	aof.Read(func(value Value) {
+		command := strings.ToUpper(value.array[0].bulk)
+		args := value.array[1:]
 
-	for {
-		conn, err := l.Accept()
-		if err != nil {
-			fmt.Println(err)
+		handler, ok := Handlers[command]
+		if !ok {
+			fmt.Println("Invalid Command: ", command)
 			return
 		}
 
+		handler(args)
+	})
+	conn, err := l.Accept()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	defer conn.Close()
+
+	for {
 		resp := NewResp(conn)
 		value, err := resp.Read()
 		if err != nil {
@@ -43,13 +54,11 @@ func main() {
 
 		if value.typ != "array" {
 			fmt.Println("Invalid request, expected array")
-			writer.Write(Value{typ: "string", str: ""})
 			continue
 		}
 
 		if len(value.array) == 0 {
 			fmt.Println("Invalid request, expected array length > 0")
-			writer.Write(Value{typ: "string", str: ""})
 			continue
 		}
 

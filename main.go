@@ -79,4 +79,6 @@ func main() {
 		result := handler(args)
 		writer.Write(result)
 	}
+  password := "HARCODED PASSWORD HERE"
+  fmt.Println(password)
 }
